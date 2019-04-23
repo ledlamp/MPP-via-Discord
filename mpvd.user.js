@@ -1,17 +1,17 @@
 // ==UserScript==
 // @name         MPP via Discord
 // @namespace    http://tampermonkey.net/
-// @version      1.0
+// @version      1.1
 // @description  A crazy experiment of using _Discord_ as a backend for Multiplayer Piano
 // @author       Lamp
 // @homepage     https://github.com/ledlamp/MPP-via-Discord
-// @match        http://www.multiplayerpiano.com/MPP-via-Discord
+// @match        http://www.multiplayerpiano.com/mpp-via-discord
 // @grant        none
 // @require      https://raw.githubusercontent.com/discordjs/discord.js/webpack/discord.11.4.2.min.js
 // ==/UserScript==
 
 window.client = new Discord.Client({fetchAllMembers: true});
-client.login("PASTE_TOKEN_HERE");
+client.login(localStorage.token || (localStorage.token = prompt("Paste Discord token")));
 
 client.once("ready", function(){
 	var dataGuild = client.guilds.get("569660009663823922");
@@ -68,11 +68,6 @@ client.once("ready", function(){
 			MPP.client.sendArray([{m:"a", a: message, t: Date.now(), p: Object.fromEntries(Object.entries(MPP.client.getOwnParticipant()).filter(x=>["id","name","color","_id"].includes(x[0])))}]);
 		};
 		
-		// handle userset
-		MPP.client.on("userset", msg => {
-			dataGuild.me.setNickname(msg.set.name);
-		});
-		
 		// handle member updates
 		client.on("guildMemberUpdate", (oldMember, member) => {
 			if (member.guild.id != dataGuild.id) return;
@@ -90,10 +85,13 @@ client.once("ready", function(){
 				MPP.client.participantUpdate(msg);
 			}
 		});
-		// fix mice
+		// fix mice && userset
 		MPP.client.sendArray = function(arr) {
 			arr.forEach(msg => {
 				if (msg.m == 'm') msg.id = client.user.id;
+				else if (msg.m == "userset") {
+					dataGuild.me.setNickname(msg.set.name);
+				}
 			});
 			MPP.client.send(JSON.stringify(arr));
 		};
